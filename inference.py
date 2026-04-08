@@ -15,7 +15,7 @@ from baseline.policy import choose_heuristic_action, choose_llm_action
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
-API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("HF_TOKEN", "")
+API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("HF_TOKEN")  # Fix 1: no default for HF_TOKEN
 BENCHMARK = "RecallTrace"
 
 
@@ -26,11 +26,12 @@ def log_start(task: str, env: str, model: str) -> None:
 def log_step(step: int, action: RecallAction, reward: float, done: bool, error: str | None) -> None:
     payload = json.dumps(action.model_dump(exclude_none=True), sort_keys=True)
     error_text = error if error is not None else "null"
-    print(f"[STEP] step={step} action={payload} reward={reward:.4f} done={str(done).lower()} error={error_text}", flush=True)
+    print(f"[STEP] step={step} action={payload} reward={reward:.2f} done={str(done).lower()} error={error_text}", flush=True)  # Fix 2: .2f
 
 
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.4f} rewards={json.dumps([round(r, 4) for r in rewards])}", flush=True)
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)  # Fix 3: comma-separated, .2f, no brackets
+    print(f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}", flush=True)  # Fix 2: .2f
 
 
 def run_task(task_id: str, client: OpenAI | None) -> float:
