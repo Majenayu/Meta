@@ -1,143 +1,54 @@
----
-title: RecallTrace OpenEnv
-emoji: 🚨
-colorFrom: red
-colorTo: blue
-sdk: docker
-app_port: 7860
----
+# RecallTrace OpenEnv
 
-# 🚀 RecallTrace OpenEnv 
+A deterministic Python 3.12 OpenEnv environment for supply-chain recall tracing and precision containment. It provides an environment model, scenario, baseline policy, grader, and FastAPI server suitable for evaluation workflows.
 
-RecallTrace is a **real-world AI environment** designed for **product recall tracing and precision containment**.
+## Architecture
 
-It simulates how companies handle:
-- contaminated product recalls
-- supply chain tracing
-- selective quarantine decisions
+```mermaid
+flowchart LR
+  Client --> API[server/app.py FastAPI]
+  API --> Env[env/env.py and env/models.py]
+  Env --> Scenario[scenario/scenario.py]
+  Policy[baseline/policy.py] --> Env
+  Grader[grader/grader.py] --> Env
+  API --> Inference[inference/policy.py]
+```
 
-This environment evaluates **agent reasoning + decision-making**, not just correctness.
+The environment is designed for deterministic state transitions. `scenario/` defines recall data and tasks, `env/` defines the state/action model, `baseline/` supplies a reference policy, and `grader/` scores outcomes.
 
----
-
-# 🧠 What This Environment Does
-
-Given a recall notice (e.g., *"Lot A is contaminated"*), the agent must:
-
-1. Trace where the product went  
-2. Identify affected nodes (warehouses, stores)  
-3. Handle relabeling / transformations  
-4. Quarantine **only unsafe inventory**  
-5. Avoid blocking safe stock  
-6. Notify affected entities  
-7. Finalize with correct containment  
-
----
-
-# 🎯 Why This Is Important
-
-This is a **real industry problem** seen in:
-- food recalls  
-- pharma defects  
-- logistics failures  
-
-Challenges include:
-- Graph traversal  
-- Partial observability  
-- Lot transformations  
-- Mixed inventory reasoning  
-- Precision decision-making  
-
----
-
-# 🧩 Tasks (Scenarios)
-
-## 🔹 Easy — Direct Recall
-- Single contaminated lot  
-- Straight supply chain  
-- Goal: trace and quarantine correctly  
-
----
-
-## 🔹 Medium — Relabeled Inventory
-- Lot gets renamed (LotA → LotA1)  
-- Goal: track transformations and quarantine  
-
----
-
-## 🔹 Hard — Mixed Inventory
-- Contaminated + safe stock mixed  
-- Goal: isolate unsafe quantity **without over-blocking**  
-
----
-
-# ⚙️ Action Space
-
-| Action | Description |
-|------|------------|
-| inspect_node | View inventory at a node |
-| trace_lot | Follow product lineage |
-| quarantine | Block unsafe stock |
-| notify | Inform affected nodes |
-| finalize | End task |
-
----
-
-# 📦 Observation Structure
-
-Each step returns:
-
-- recall_notice  
-- inventory  
-- action history  
-- trace results  
-- inspection data  
-
----
-
-# 🏆 Reward & Grading
-
-### Reward System
-- + Correct tracing  
-- + Correct quarantine  
-- + Correct notification  
-- − Wrong node  
-- − Over-quarantine  
-- − Missed unsafe stock  
-
----
-
-### Final Score
-Range: **0.0 → 1.0**
-
-Based on:
-- accuracy  
-- precision  
-- efficiency  
-
----
-
-# 🧱 Project Structure
+## Setup
 
 ```bash
-recalltrace-openenv/
-│
-├── env/                # Environment logic
-│   ├── env.py
-│   └── __init__.py
-│
-├── scenario/           # Scenario generation
-│   └── scenario.py
-│
-├── grader/             # Evaluation + reward
-│   └── grader.py
-│
-├── inference/          # Agent simulation
-│   └── inference.py
-│
-├── config/
-│   └── openenv.yaml
-│
-├── Dockerfile
-├── requirements.txt
-├── README.md
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+pytest
+uvicorn server.app:app --host 0.0.0.0 --port 7860
+```
+
+The package also exposes a `server` entry point. Docker uses Python 3.12, installs `requirements.txt`, and starts Uvicorn on port `7860`.
+
+## API and evaluation flow
+
+Clients call the FastAPI server to create/interact with an environment. Actions are applied to typed state, policies produce decisions, and the grader evaluates recall-traceability and containment behavior. `inference/` isolates model-backed policy logic; API keys belong in deployment secrets.
+
+## Testing and limitations
+
+`tests/test_env.py` covers environment behavior. Add scenario, grader, API contract, and malformed-action tests when extending the environment. The deterministic model is an evaluation harness, not a production recall-management system; validate domain rules and data provenance separately.
+
+## Security and operations
+
+- Keep credentials, database URLs, OAuth tokens, API keys, and signing secrets in environment variables; never commit them.
+- Validate and constrain uploaded files and user input at the server boundary, and enable HTTPS in production.
+- Review dependency updates and rotate any credential that has appeared in repository history.
+
+## Testing
+
+The repository currently has no comprehensive automated test suite unless noted above. Before production changes, add tests for authentication/authorization, validation failures, persistence errors, and the primary user workflow.
+
+## Limitations and roadmap
+
+This is an actively evolving project. Production hardening, observability, rate limiting, backup/retention policy, and accessibility/performance validation should be completed before handling sensitive or high-volume workloads.
+
+## License
+
+See the repository license file and package metadata for the authoritative terms.
