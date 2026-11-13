@@ -52,3 +52,14 @@ This is an actively evolving project. Production hardening, observability, rate 
 ## License
 
 See the repository license file and package metadata for the authoritative terms.
+## Implementation notes
+
+The environment is organized around typed state/action models in `env/`, deterministic recall scenarios in `scenario/`, a reference policy in `baseline/`, and scoring in `grader/`. `server/app.py` exposes health, task, reset, step, state, and episode/evaluation endpoints; `inference/` contains the optional model-backed policy path.
+
+### Evaluation contract
+
+Use `tests/test_env.py` as the baseline regression suite. Exercise malformed actions, reset determinism, task completion, grader edge cases, and model-provider failures separately. `API_BASE_URL`, `MODEL_NAME`, `OPENAI_API_KEY`, and `HF_TOKEN` are deployment configuration—not values to commit.
+
+### License status
+
+The package metadata does not declare an explicit license. Treat redistribution terms as unspecified until a license file and project metadata are added.
